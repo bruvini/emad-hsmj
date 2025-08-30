@@ -6,10 +6,10 @@ export const patientSchema = z.object({
   cpf: z.string().optional(),
   nomeCompleto: z.string().min(1, "Nome completo é obrigatório"),
   dataNascimento: z.date({
-    required_error: "Data de nascimento é obrigatória",
+    message: "Data de nascimento é obrigatória",
   }),
   sexo: z.enum(['Masculino', 'Feminino'], {
-    required_error: "Sexo é obrigatório",
+    message: "Sexo é obrigatório",
   }),
   telefoneContato: z.string().optional(),
   endereco: z.object({
@@ -28,7 +28,7 @@ export const patientSchema = z.object({
     'Óbito',
     'Inelegível'
   ], {
-    required_error: "Status é obrigatório",
+    message: "Status é obrigatório",
   }),
   tipoCuidado: z.enum([
     'Paliativo',
