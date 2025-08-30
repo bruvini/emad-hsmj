@@ -91,7 +91,7 @@
   }
 
   .sidebar-item {
-    @apply flex items-center px-4 py-3 text-gray-700 hover:bg-medical-blue-light hover:text-medical-blue rounded-lg transition-all duration-200 cursor-pointer group;
+    @apply flex items-center px-4 py-3 text-gray-700 hover:bg-medical-blue-light hover:text-medical-blue rounded-lg transition-all duration-200 cursor-pointer;
   }
 
   .sidebar-item-active {
