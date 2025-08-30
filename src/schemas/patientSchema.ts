@@ -11,7 +11,16 @@ export const patientSchema = z.object({
   sexo: z.enum(['Masculino', 'Feminino'], {
     message: "Sexo é obrigatório",
   }),
-  telefoneContato: z.string().optional(),
+  telefoneContato: z.string()
+    .optional()
+    .refine((val) => {
+      if (!val || val === '') return true; // Campo opcional
+      // Regex para validar formato de telefone com DDD (47) 99999999 ou 4799999999
+      const phoneRegex = /^\(?\d{2}\)?\s?\d{8,9}$/;
+      return phoneRegex.test(val.replace(/\D/g, '')); // Remove caracteres não numéricos para validação
+    }, {
+      message: "Telefone deve ter formato válido com DDD (ex: (47) 99999999)",
+    }),
   endereco: z.object({
     rua: z.string().optional(),
     numero: z.string().optional(),
@@ -30,13 +39,13 @@ export const patientSchema = z.object({
   ], {
     message: "Status é obrigatório",
   }),
-  tipoCuidado: z.enum([
+  tipoCuidado: z.array(z.enum([
     'Paliativo',
     'Medicação',
     'Curativo',
     'Reabilitação',
     'Anticoagulação'
-  ]).optional(),
+  ])).optional(),
 }).refine((data) => data.cns || data.cpf, {
   message: "Pelo menos CNS ou CPF deve ser preenchido",
   path: ["cns"], // Mostra erro no campo CNS

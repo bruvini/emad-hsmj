@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Pencil, Trash2, Eye } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -30,7 +29,7 @@ interface Paciente {
   };
   nivelAtencao?: 'AD I' | 'AD II' | 'AD III';
   status: 'Análise de Elegibilidade' | 'Ativo' | 'Alta por Melhora' | 'Alta Administrativa com Encaminhamento' | 'Óbito' | 'Inelegível';
-  tipoCuidado?: 'Paliativo' | 'Medicação' | 'Curativo' | 'Reabilitação' | 'Anticoagulação';
+  tipoCuidado?: string[]; // Alterado para array de strings
   dataInclusao: Timestamp;
 }
 

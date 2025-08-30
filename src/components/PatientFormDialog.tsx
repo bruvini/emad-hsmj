@@ -25,6 +25,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { patientSchema, PatientFormData, statusOptions, nivelAtencaoOptions, tipoCuidadoOptions } from '@/schemas/patientSchema';
 
@@ -61,7 +62,7 @@ const PatientFormDialog: React.FC<PatientFormDialogProps> = ({
       },
       nivelAtencao: patient?.nivelAtencao || undefined,
       status: patient?.status || undefined,
-      tipoCuidado: patient?.tipoCuidado || undefined,
+      tipoCuidado: patient?.tipoCuidado || [],
     },
   });
 
@@ -83,7 +84,7 @@ const PatientFormDialog: React.FC<PatientFormDialogProps> = ({
         },
         nivelAtencao: patient.nivelAtencao || undefined,
         status: patient.status || undefined,
-        tipoCuidado: patient.tipoCuidado || undefined,
+        tipoCuidado: patient.tipoCuidado || [],
       });
     } else {
       form.reset({
@@ -102,7 +103,7 @@ const PatientFormDialog: React.FC<PatientFormDialogProps> = ({
         },
         nivelAtencao: undefined,
         status: undefined,
-        tipoCuidado: undefined,
+        tipoCuidado: [],
       });
     }
   }, [patient, form]);
@@ -196,9 +197,12 @@ const PatientFormDialog: React.FC<PatientFormDialogProps> = ({
                           selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
+                            date > new Date() || date < new Date("1920-01-01")
                           }
                           initialFocus
+                          captionLayout="dropdown-buttons"
+                          fromYear={1920}
+                          toYear={new Date().getFullYear()}
                           className="pointer-events-auto"
                         />
                       </PopoverContent>
@@ -298,27 +302,53 @@ const PatientFormDialog: React.FC<PatientFormDialogProps> = ({
                   </FormItem>
                 )}
               />
+            </div>
 
+            {/* Seção de Tipo de Cuidado com Múltipla Seleção */}
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="tipoCuidado"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
-                    <FormLabel>Tipo de Cuidado</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {tipoCuidadoOptions.map((tipo) => (
-                          <SelectItem key={tipo} value={tipo}>
-                            {tipo}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="mb-4">
+                      <FormLabel className="text-base">Tipo de Cuidado</FormLabel>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {tipoCuidadoOptions.map((item) => (
+                        <FormField
+                          key={item}
+                          control={form.control}
+                          name="tipoCuidado"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={item}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(item)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), item])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== item
+                                            )
+                                          )
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="text-sm font-normal">
+                                  {item}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
