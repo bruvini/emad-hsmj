@@ -30,6 +30,11 @@ export interface AtendimentoData {
 export interface PacienteData {
   id: string;
   nomeCompleto: string;
+  dataNascimento?: any; // Firestore Timestamp
+  sexo?: 'Masculino' | 'Feminino';
+  nivelAtencao?: 'AD I' | 'AD II' | 'AD III';
+  status?: string;
+  tipoCuidado?: string[];
 }
 
 export interface UsuarioData {

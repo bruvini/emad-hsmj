@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Calendar, CalendarIcon } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { collection, getDocs } from 'firebase/firestore';
@@ -79,7 +78,7 @@ export default function DashboardFilters({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Filtros de Análise</CardTitle>
+        <CardTitle>Filtros Globais do Dashboard</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
