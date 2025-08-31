@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Clock, CheckCircle2, User, Calendar } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, doc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -11,6 +10,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,15 +34,14 @@ interface Atendimento {
   status: 'Em Andamento' | 'Concluído';
 }
 
-interface Paciente {
-  id: string;
-  nomeCompleto: string;
-  status: string;
+interface PacienteOption {
+  value: string;
+  label: string;
 }
 
-interface Usuario {
-  id: string;
-  nomeCompleto: string;
+interface UsuarioOption {
+  value: string;
+  label: string;
 }
 
 const atendimentoSchema = z.object({
@@ -58,12 +60,14 @@ type AtendimentoFormData = z.infer<typeof atendimentoSchema>;
 const AtendimentosPage: React.FC = () => {
   const [atendimentosEmAndamento, setAtendimentosEmAndamento] = useState<Atendimento[]>([]);
   const [atendimentosConcluidos, setAtendimentosConcluidos] = useState<Atendimento[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [pacientesOptions, setPacientesOptions] = useState<PacienteOption[]>([]);
+  const [usuariosOptions, setUsuariosOptions] = useState<UsuarioOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [editingAtendimento, setEditingAtendimento] = useState<Atendimento | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pacienteComboboxOpen, setPacienteComboboxOpen] = useState(false);
+  const [profissionalComboboxOpen, setProfissionalComboboxOpen] = useState(false);
 
   const form = useForm<AtendimentoFormData>({
     resolver: zodResolver(atendimentoSchema),
@@ -121,13 +125,15 @@ const AtendimentosPage: React.FC = () => {
       );
       const querySnapshot = await getDocs(q);
       const pacientesData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        nomeCompleto: doc.data().nomeCompleto,
-        status: doc.data().status
-      })) as Paciente[];
-      setPacientes(pacientesData);
+        value: doc.id,
+        label: doc.data().nomeCompleto
+      })) as PacienteOption[];
+      
+      console.log('Pacientes carregados:', pacientesData);
+      setPacientesOptions(pacientesData);
     } catch (error) {
       console.error('Erro ao carregar pacientes:', error);
+      toast.error('Erro ao carregar pacientes');
     }
   }, []);
 
@@ -135,12 +141,15 @@ const AtendimentosPage: React.FC = () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'usuariosEMAD'));
       const usuariosData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        nomeCompleto: doc.data().nomeCompleto
-      })) as Usuario[];
-      setUsuarios(usuariosData);
+        value: doc.id,
+        label: doc.data().nomeCompleto
+      })) as UsuarioOption[];
+      
+      console.log('Usuários carregados:', usuariosData);
+      setUsuariosOptions(usuariosData);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao carregar usuários');
     }
   }, []);
 
@@ -167,8 +176,6 @@ const AtendimentosPage: React.FC = () => {
 
   const handleConcluirAtendimento = (atendimento: Atendimento) => {
     setEditingAtendimento(atendimento);
-    const pacienteNome = pacientes.find(p => p.id === atendimento.pacienteId)?.nomeCompleto || atendimento.pacienteNome;
-    const profissionalNome = usuarios.find(u => u.id === atendimento.profissionalId)?.nomeCompleto || atendimento.profissionalNome;
     
     const now = new Date();
     const localDateTime = format(now, "yyyy-MM-dd'T'HH:mm");
@@ -188,8 +195,8 @@ const AtendimentosPage: React.FC = () => {
   const onSubmit = async (data: AtendimentoFormData) => {
     setSaving(true);
     try {
-      const paciente = pacientes.find(p => p.id === data.pacienteId);
-      const profissional = usuarios.find(u => u.id === data.profissionalId);
+      const paciente = pacientesOptions.find(p => p.value === data.pacienteId);
+      const profissional = usuariosOptions.find(u => u.value === data.profissionalId);
 
       if (!paciente || !profissional) {
         toast.error('Paciente ou profissional não encontrado');
@@ -202,9 +209,9 @@ const AtendimentosPage: React.FC = () => {
 
       const atendimentoData = {
         pacienteId: data.pacienteId,
-        pacienteNome: paciente.nomeCompleto,
+        pacienteNome: paciente.label,
         profissionalId: data.profissionalId,
-        profissionalNome: profissional.nomeCompleto,
+        profissionalNome: profissional.label,
         tipoAtendimento: data.tipoAtendimento,
         horaInicio: horaInicioTimestamp,
         horaFim: horaFimTimestamp,
@@ -373,59 +380,125 @@ const AtendimentosPage: React.FC = () => {
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Combobox para Paciente */}
               <FormField
                 control={form.control}
                 name="pacienteId"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Paciente</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
-                      disabled={!!editingAtendimento}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um paciente" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {pacientes.map((paciente) => (
-                          <SelectItem key={paciente.id} value={paciente.id}>
-                            {paciente.nomeCompleto}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={pacienteComboboxOpen} onOpenChange={setPacienteComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                            disabled={!!editingAtendimento}
+                          >
+                            {field.value
+                              ? pacientesOptions.find((paciente) => paciente.value === field.value)?.label
+                              : "Selecione um paciente"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar paciente..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum paciente encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {pacientesOptions.map((paciente) => (
+                                <CommandItem
+                                  value={paciente.label}
+                                  key={paciente.value}
+                                  onSelect={() => {
+                                    form.setValue("pacienteId", paciente.value);
+                                    setPacienteComboboxOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      paciente.value === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {paciente.label}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Combobox para Profissional */}
               <FormField
                 control={form.control}
                 name="profissionalId"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Profissional</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
-                      disabled={!!editingAtendimento}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um profissional" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {usuarios.map((usuario) => (
-                          <SelectItem key={usuario.id} value={usuario.id}>
-                            {usuario.nomeCompleto}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={profissionalComboboxOpen} onOpenChange={setProfissionalComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                            disabled={!!editingAtendimento}
+                          >
+                            {field.value
+                              ? usuariosOptions.find((usuario) => usuario.value === field.value)?.label
+                              : "Selecione um profissional"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Buscar profissional..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum profissional encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {usuariosOptions.map((usuario) => (
+                                <CommandItem
+                                  value={usuario.label}
+                                  key={usuario.value}
+                                  onSelect={() => {
+                                    form.setValue("profissionalId", usuario.value);
+                                    setProfissionalComboboxOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      usuario.value === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {usuario.label}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
