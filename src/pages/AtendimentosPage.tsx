@@ -118,22 +118,27 @@ const AtendimentosPage: React.FC = () => {
 
   const loadPacientes = useCallback(async () => {
     try {
-      const q = query(
-        collection(db, 'pacientesEMAD'),
-        where('status', '==', 'Ativo'),
-        orderBy('nomeCompleto')
-      );
-      const querySnapshot = await getDocs(q);
-      const pacientesData = querySnapshot.docs.map(doc => ({
-        value: doc.id,
-        label: doc.data().nomeCompleto
-      })) as PacienteOption[];
-      
-      console.log('Pacientes carregados:', pacientesData);
+      // Consulta sem filtro de status para garantir que todos pacientes sejam retornados
+      const pacientesQuery = query(collection(db, 'pacientesEMAD'), orderBy('nomeCompleto'));
+      const querySnapshot = await getDocs(pacientesQuery);
+
+      // Logs de diagnóstico
+      console.log('[Atendimentos] Pacientes - documentos encontrados:', querySnapshot.docs.length);
+
+      const pacientesData: PacienteOption[] = querySnapshot.docs.map((d) => {
+        const data: any = d.data();
+        console.log('[Atendimentos] Mapeando paciente:', { id: d.id, nomeCompleto: data?.nomeCompleto });
+        return {
+          value: d.id,
+          label: data?.nomeCompleto ?? '(Sem nome)',
+        };
+      });
+
+      console.log('[Atendimentos] Pacientes mapeados para Combobox:', pacientesData);
       setPacientesOptions(pacientesData);
     } catch (error) {
-      console.error('Erro ao carregar pacientes:', error);
-      toast.error('Erro ao carregar pacientes');
+      console.error('Erro detalhado ao buscar pacientes:', error);
+      toast.error('Erro ao carregar pacientes. Veja o console para detalhes.');
     }
   }, []);
 
