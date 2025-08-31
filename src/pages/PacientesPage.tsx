@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Pencil, Trash2, Eye } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -10,6 +11,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import PatientFormDialog from '@/components/PatientFormDialog';
 import PatientViewDialog from '@/components/PatientViewDialog';
+import PatientsEligibilitySection from '@/components/PatientsEligibilitySection';
 import { PatientFormData } from '@/schemas/patientSchema';
 
 interface Paciente {
@@ -47,8 +49,10 @@ const PacientesPage: React.FC = () => {
   const loadPatients = useCallback(async () => {
     setLoading(true);
     try {
+      // Modificar consulta para buscar apenas pacientes Ativos e em Análise de Elegibilidade
       const q = query(
         collection(db, 'pacientesEMAD'),
+        where('status', 'in', ['Ativo', 'Análise de Elegibilidade']),
         orderBy('dataInclusao', 'desc')
       );
       const querySnapshot = await getDocs(q);
@@ -191,7 +195,14 @@ const PacientesPage: React.FC = () => {
         </Button>
       </div>
 
+      {/* Seção de Pacientes em Análise de Elegibilidade */}
+      <PatientsEligibilitySection onPatientStatusChanged={loadPatients} />
+
       <div className="bg-white rounded-lg border">
+        <div className="p-6 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">Pacientes Ativos e em Análise</h2>
+          <p className="text-sm text-gray-600">Lista de pacientes ativos e aguardando análise de elegibilidade</p>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -227,6 +238,8 @@ const PacientesPage: React.FC = () => {
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       patient.status === 'Ativo' 
                         ? 'bg-green-100 text-green-800'
+                        : patient.status === 'Análise de Elegibilidade'
+                        ? 'bg-yellow-100 text-yellow-800'
                         : patient.status === 'Óbito'
                         ? 'bg-red-100 text-red-800'
                         : 'bg-gray-100 text-gray-800'
