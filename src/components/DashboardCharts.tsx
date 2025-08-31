@@ -13,7 +13,6 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Legend,
   ResponsiveContainer
 } from 'recharts';
 
