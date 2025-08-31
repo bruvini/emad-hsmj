@@ -13,33 +13,43 @@ import AtendimentosPage from "./pages/AtendimentosPage";
 import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Create QueryClient outside of component to avoid recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Rotas que usam o layout principal */}
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/gestao-usuarios" element={<GestaoUsuariosPage />} />
-            <Route path="/pacientes" element={<PacientesPage />} />
-            <Route path="/atendimentos" element={<AtendimentosPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-          </Route>
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Rotas que usam o layout principal */}
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/gestao-usuarios" element={<GestaoUsuariosPage />} />
+              <Route path="/pacientes" element={<PacientesPage />} />
+              <Route path="/atendimentos" element={<AtendimentosPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+            </Route>
 
-          {/* Rota de login sem o layout */}
-          <Route path="/login" element={<LoginPage />} />
-          
-          {/* Rota de fallback */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+            {/* Rota de login sem o layout */}
+            <Route path="/login" element={<LoginPage />} />
+            
+            {/* Rota de fallback */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
