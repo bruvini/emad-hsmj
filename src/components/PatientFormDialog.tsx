@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -200,7 +199,7 @@ const PatientFormDialog: React.FC<PatientFormDialogProps> = ({
                             date > new Date() || date < new Date("1920-01-01")
                           }
                           initialFocus
-                          captionLayout="dropdown-buttons"
+                          captionLayout="dropdown"
                           fromYear={1920}
                           toYear={new Date().getFullYear()}
                           className="pointer-events-auto"

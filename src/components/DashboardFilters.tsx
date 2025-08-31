@@ -90,7 +90,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   selected={filters.startDate}
                   onSelect={(date) => handleFilterChange('startDate', date)}
                   initialFocus
-                  captionLayout="dropdown-buttons"
+                  captionLayout="dropdown"
                   fromYear={2020}
                   toYear={2030}
                 />
@@ -120,7 +120,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
                   selected={filters.endDate}
                   onSelect={(date) => handleFilterChange('endDate', date)}
                   initialFocus
-                  captionLayout="dropdown-buttons"
+                  captionLayout="dropdown"
                   fromYear={2020}
                   toYear={2030}
                 />
