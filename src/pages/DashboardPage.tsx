@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -8,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import DashboardFilters from '@/components/DashboardFilters';
 import DashboardCharts from '@/components/DashboardCharts';
 import PatientProfileCharts from '@/components/PatientProfileCharts';
+import DetailTables from '@/components/DetailTables';
 import { FilterState, ChartData, AtendimentoData, UsuarioData, PacienteData } from '@/types/dashboard';
 import { format, differenceInYears } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -23,6 +23,13 @@ const DashboardPage = () => {
     modalidadeAtendimento: '',
     nivelAtencao: ''
   });
+
+  // Novo estado para filtros de detalhamento
+  const [detailFilter, setDetailFilter] = useState<{ type: string; value: string } | null>(null);
+
+  // Estados para os dados originais
+  const [atendimentosData, setAtendimentosData] = useState<AtendimentoData[]>([]);
+  const [usuariosData, setUsuariosData] = useState<UsuarioData[]>([]);
 
   // Estados para os gráficos de produção e eficiência
   const [chartData, setChartData] = useState({
@@ -85,18 +92,22 @@ const DashboardPage = () => {
       }
 
       const atendimentosSnapshot = await getDocs(atendimentosQuery);
-      const atendimentosData: AtendimentoData[] = atendimentosSnapshot.docs.map(doc => ({
+      const atendimentosDataFetched: AtendimentoData[] = atendimentosSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as AtendimentoData));
 
       // Buscar dados de usuários
       const usuariosSnapshot = await getDocs(collection(db, 'usuariosEMAD'));
-      const usuariosData: UsuarioData[] = usuariosSnapshot.docs.map(doc => ({
+      const usuariosDataFetched: UsuarioData[] = usuariosSnapshot.docs.map(doc => ({
         id: doc.id,
         nomeCompleto: doc.data().nomeCompleto,
         cargo: doc.data().cargo
       }));
+
+      // Armazenar dados originais para a tabela de detalhamento
+      setAtendimentosData(atendimentosDataFetched);
+      setUsuariosData(usuariosDataFetched);
 
       // Buscar dados de pacientes
       let pacientesQuery = query(collection(db, 'pacientesEMAD'));
@@ -117,14 +128,14 @@ const DashboardPage = () => {
       } as PacienteData));
 
       // Aplicar filtro por cargo nos atendimentos
-      let filteredAtendimentos = atendimentosData;
+      let filteredAtendimentos = atendimentosDataFetched;
       if (filters.cargo) {
-        const usuariosComCargo = usuariosData.filter(u => u.cargo === filters.cargo).map(u => u.id);
-        filteredAtendimentos = atendimentosData.filter(a => usuariosComCargo.includes(a.profissionalId));
+        const usuariosComCargo = usuariosDataFetched.filter(u => u.cargo === filters.cargo).map(u => u.id);
+        filteredAtendimentos = atendimentosDataFetched.filter(a => usuariosComCargo.includes(a.profissionalId));
       }
 
       // Processar dados para os gráficos de produção
-      const processedChartData = processChartData(filteredAtendimentos, usuariosData);
+      const processedChartData = processChartData(filteredAtendimentos, usuariosDataFetched);
       setChartData(processedChartData);
 
       // Processar dados para os gráficos de perfil dos pacientes
@@ -296,6 +307,8 @@ const DashboardPage = () => {
       modalidadeAtendimento: '',
       nivelAtencao: ''
     });
+    // Limpar também o filtro de detalhamento
+    setDetailFilter(null);
     fetchDashboardData();
   };
 
@@ -363,6 +376,36 @@ const DashboardPage = () => {
                     pacientesPorNivel={patientData.pacientesPorNivel}
                     piramideEtaria={patientData.piramideEtaria}
                     pacientesPorStatus={patientData.pacientesPorStatus}
+                  />
+                )}
+
+                {loading && (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Carregando dados do dashboard...</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Bloco 3: Tabela de Detalhamento */}
+        <AccordionItem value="detalhamento">
+          <AccordionTrigger className="text-xl font-semibold">
+            Tabela de Detalhamento
+          </AccordionTrigger>
+          <AccordionContent>
+            <Card>
+              <CardContent className="pt-6">
+                {!loading && (
+                  <DetailTables
+                    atendimentos={atendimentosData}
+                    usuarios={usuariosData}
+                    detailFilter={detailFilter}
+                    onFilterChange={setDetailFilter}
                   />
                 )}
 
