@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { collection, getDocs, query, where, Timestamp, orderBy } from 'firebase/firestore';
@@ -292,7 +291,12 @@ const DashboardPage: React.FC = () => {
           />
 
           {/* Gráficos */}
-          <DashboardCharts data={chartData} loading={loading} />
+          <DashboardCharts
+            data={chartData.atendimentosPorMes.map(({ month, total }) => ({
+              name: month,
+              value: total,
+            }))}
+          />
         </CardContent>
       </Card>
     </div>
